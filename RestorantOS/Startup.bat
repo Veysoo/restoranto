@@ -85,4 +85,5 @@ start "" "%APP_EXE%"
 echo.
 echo RestaurantOS baslatildi.
 echo Veritabani: localhost,14330
+echo Web surumu icin: Startup-Web.bat  ^(http://localhost:8080^)
 timeout /t 3 >nul
