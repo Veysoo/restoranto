@@ -1,0 +1,22 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: restaurantos-sqlserver
+    ports:
+      - "14330:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "RestaurantOS@2024!"
+      MSSQL_PID: "Developer"
+    volumes:
+      - restaurantos_sql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'RestaurantOS@2024!' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  restaurantos_sql_data:

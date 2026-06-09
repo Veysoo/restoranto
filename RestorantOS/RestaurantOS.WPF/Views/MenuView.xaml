@@ -1,0 +1,81 @@
+<UserControl x:Class="RestaurantOS.WPF.Views.MenuView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="0,0,0,20">
+            <Button DockPanel.Dock="Right" Content="+ Ürün Ekle" Command="{Binding OpenAddItemCommand}" Style="{StaticResource PrimaryButton}" VerticalAlignment="Center"/>
+            <StackPanel>
+                <TextBlock Text="Menü Yönetimi" Style="{StaticResource Heading1}"/>
+                <TextBlock Text="Kategoriler, fiyatlar ve ürün müsaitliği" Style="{StaticResource PageSubtitle}"/>
+            </StackPanel>
+        </DockPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <ListBox Grid.Column="0" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
+                     Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource BorderSubtleBrush}" Margin="0,0,8,0">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Name}" Padding="8" Foreground="{StaticResource TextPrimaryBrush}"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <ScrollViewer Grid.Column="1">
+                <ItemsControl ItemsSource="{Binding SelectedCategory.Items}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource CardBorder}" Width="220" Margin="0,0,8,8">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource BodyText}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding Price, Converter={StaticResource Currency}}" Style="{StaticResource MonoAmount}" FontSize="16" Margin="0,4,0,0"/>
+                                    <TextBlock Text="{Binding Description}" Style="{StaticResource CaptionText}" TextTrimming="CharacterEllipsis" MaxHeight="40"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <Button Content="Düzenle" Command="{Binding DataContext.OpenEditItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}" Style="{StaticResource SecondaryButton}" FontSize="11" Margin="0,0,4,0"/>
+                                        <Button Content="Mevcutluk" Command="{Binding DataContext.ToggleAvailabilityCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}" Style="{StaticResource SecondaryButton}" FontSize="11"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+
+        <Border Grid.RowSpan="2" Background="#80000000" Visibility="{Binding IsEditPanelOpen, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource CardBorder}" Width="400" HorizontalAlignment="Right" Margin="0,0,24,0" VerticalAlignment="Stretch">
+                <ScrollViewer>
+                    <StackPanel Margin="8">
+                        <TextBlock Text="Ürün Düzenle" Style="{StaticResource Heading2}" Margin="0,0,0,16"/>
+                        <TextBlock Text="Ad" Style="{StaticResource CaptionText}"/>
+                        <TextBox Text="{Binding EditingItem.Name}" Style="{StaticResource TextBoxStyle}" Margin="0,4,0,12"/>
+                        <TextBlock Text="Fiyat" Style="{StaticResource CaptionText}"/>
+                        <TextBox Text="{Binding EditingItem.Price}" Style="{StaticResource TextBoxStyle}" Margin="0,4,0,12"/>
+                        <TextBlock Text="Açıklama" Style="{StaticResource CaptionText}"/>
+                        <TextBox Text="{Binding EditingItem.Description}" Style="{StaticResource TextBoxStyle}" Margin="0,4,0,12" Height="60" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                            <Button Content="İptal" Command="{Binding CloseEditPanelCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"/>
+                            <Button Content="Kaydet" Command="{Binding SaveItemCommand}" Style="{StaticResource PrimaryButton}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,153 @@
+<UserControl x:Class="RestaurantOS.WPF.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:RestaurantOS.WPF.Controls"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <TextBlock Text="Dashboard" Style="{StaticResource Heading1}"/>
+            <TextBlock Text="Günlük performans özeti ve canlı operasyon metrikleri" Style="{StaticResource PageSubtitle}" Margin="0,0,0,24"/>
+
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBool}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <UniformGrid Grid.Row="0" Columns="4" Margin="0,0,0,20">
+                    <controls:TiltCard Style="{StaticResource StatCard}" Margin="0,0,10,0">
+                        <Grid>
+                            <Border Height="3" VerticalAlignment="Top" Margin="-20,-18,-20,0" CornerRadius="12,12,0,0" Background="{StaticResource AccentPrimaryBrush}"/>
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="BUGÜNKÜ GELİR" Style="{StaticResource LabelText}"/>
+                                <controls:AnimatedNumber Value="{Binding TodayRevenue}" IsCurrency="True" Style="{StaticResource MonoAmount}" FontSize="28"/>
+                                <TextBlock Margin="0,6,0,0" Style="{StaticResource CaptionText}">
+                                    <Run Text="Trend "/>
+                                    <Run Text="{Binding RevenueTrend, StringFormat={}{0:+#.#%;-#.#%;0%}}" Foreground="{StaticResource AccentSuccessBrush}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </controls:TiltCard>
+                    <controls:TiltCard Style="{StaticResource StatCard}" Margin="5,0,5,0">
+                        <Grid>
+                            <Border Height="3" VerticalAlignment="Top" Margin="-20,-18,-20,0" CornerRadius="12,12,0,0" Background="{StaticResource AccentWarningBrush}"/>
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="AÇIK MASALAR" Style="{StaticResource LabelText}"/>
+                                <TextBlock FontSize="32" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" FontFamily="{StaticResource FontMono}">
+                                    <Run Text="{Binding OpenTables}"/><Run Text=" / " Foreground="{StaticResource TextMutedBrush}"/><Run Text="{Binding TotalTables}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </controls:TiltCard>
+                    <controls:TiltCard Style="{StaticResource StatCard}" Margin="5,0,5,0">
+                        <Grid>
+                            <Border Height="3" VerticalAlignment="Top" Margin="-20,-18,-20,0" CornerRadius="12,12,0,0" Background="{StaticResource AccentSecondaryBrush}"/>
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="AKTİF SİPARİŞ" Style="{StaticResource LabelText}"/>
+                                <controls:AnimatedNumber Value="{Binding ActiveOrders}" IsCurrency="False" Style="{StaticResource MonoAmount}" FontSize="28"/>
+                            </StackPanel>
+                        </Grid>
+                    </controls:TiltCard>
+                    <controls:TiltCard Style="{StaticResource StatCard}" Margin="10,0,0,0">
+                        <Grid>
+                            <Border Height="3" VerticalAlignment="Top" Margin="-20,-18,-20,0" CornerRadius="12,12,0,0" Background="{StaticResource AccentSuccessBrush}"/>
+                            <StackPanel Margin="0,8,0,0">
+                                <TextBlock Text="ORTALAMA FİŞ" Style="{StaticResource LabelText}"/>
+                                <controls:AnimatedNumber Value="{Binding AverageTicket}" IsCurrency="True" Style="{StaticResource MonoAmount}" FontSize="28"/>
+                            </StackPanel>
+                        </Grid>
+                    </controls:TiltCard>
+                </UniformGrid>
+
+                <Border Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0,0,0,20">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,16">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Border Background="#141824" CornerRadius="8" Padding="12,8" Margin="0,0,8,0">
+                                    <TextBlock Style="{StaticResource CaptionText}">
+                                        <Run Text="{Binding TodaySessionCount}"/><Run Text=" oturum"/>
+                                    </TextBlock>
+                                </Border>
+                                <Border Background="#141824" CornerRadius="8" Padding="12,8">
+                                    <TextBlock Style="{StaticResource CaptionText}">
+                                        <Run Text="{Binding TodayItemsSold}"/><Run Text=" ürün satıldı"/>
+                                    </TextBlock>
+                                </Border>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="Bugün Satılanlar" Style="{StaticResource Heading2}"/>
+                                <TextBlock Text="Günlük satış analizi — ödeme tamamlanan ürünler" Style="{StaticResource PageSubtitle}"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <DataGrid ItemsSource="{Binding TodaySoldItems}" Style="{StaticResource DarkDataGrid}" AutoGenerateColumns="False" IsReadOnly="True"
+                                  MaxHeight="280">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ÜRÜN" Binding="{Binding ItemName}" Width="*"/>
+                                <DataGridTextColumn Header="ADET" Binding="{Binding Quantity}" Width="80"/>
+                                <DataGridTextColumn Header="GELİR" Binding="{Binding Revenue, Converter={StaticResource Currency}}" Width="130"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <TextBlock Text="Henüz bugün satış yok." Style="{StaticResource CaptionText}" Margin="0,12,0,0"
+                                   Visibility="{Binding HasNoTodaySales, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Border>
+
+                <Grid Grid.Row="2" Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Style="{StaticResource CardBorder}" Margin="0,0,10,0">
+                        <StackPanel>
+                            <TextBlock Text="Son 7 Gün Gelir" Style="{StaticResource Heading2}" Margin="0,0,0,16"/>
+                            <lvc:CartesianChart Series="{Binding RevenueSeries}" XAxes="{Binding RevenueXAxes}" YAxes="{Binding RevenueYAxes}" Height="260"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource CardBorder}" Margin="10,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Kat Özeti" Style="{StaticResource Heading2}" Margin="0,0,0,16"/>
+                            <ItemsControl ItemsSource="{Binding FloorOverview}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="40" Height="40" CornerRadius="8" Margin="4"
+                                                Background="#141824" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1">
+                                            <TextBlock Text="{Binding TableNumber}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Grid.Row="3" Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="Son İşlemler" Style="{StaticResource Heading2}" Margin="0,0,0,16"/>
+                        <DataGrid ItemsSource="{Binding RecentTransactions}" Style="{StaticResource DarkDataGrid}" AutoGenerateColumns="False" IsReadOnly="True">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="TARİH" Binding="{Binding PaidAt, StringFormat=dd.MM HH:mm}" Width="120"/>
+                                <DataGridTextColumn Header="MASA" Binding="{Binding TableName}" Width="*"/>
+                                <DataGridTextColumn Header="TUTAR" Binding="{Binding Amount, Converter={StaticResource Currency}}" Width="130"/>
+                                <DataGridTextColumn Header="YÖNTEM" Binding="{Binding Method}" Width="110"/>
+                                <DataGridTextColumn Header="KASİYER" Binding="{Binding ReceivedBy}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Style="{StaticResource CardBorder}" Padding="40" HorizontalAlignment="Center" Margin="0,40,0,0"
+                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="Veriler yükleniyor..." Style="{StaticResource BodyText}"/>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

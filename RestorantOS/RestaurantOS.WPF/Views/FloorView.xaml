@@ -1,0 +1,119 @@
+<UserControl x:Class="RestaurantOS.WPF.Views.FloorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:RestaurantOS.WPF.Views">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="Kat Planı" Style="{StaticResource Heading1}"/>
+            <TextBlock Text="Masa durumlarını canlı takip edin" Style="{StaticResource PageSubtitle}"/>
+        </StackPanel>
+
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding Sections}" Margin="0,0,0,20">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <RadioButton Content="{Binding}" Style="{StaticResource SectionPill}" GroupName="FloorSections"
+                                 IsChecked="{Binding DataContext.SelectedSection, RelativeSource={RelativeSource AncestorType=UserControl},
+                                     Converter={StaticResource StringMatch}, ConverterParameter={Binding}, Mode=TwoWay}"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Tables}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="220" Height="196" Margin="0,0,12,12" CornerRadius="14" Cursor="Hand"
+                                Background="{StaticResource BgSurfaceBrush}" BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1"
+                                MouseLeftButtonUp="TableCard_Click" Tag="{Binding}">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.3"/>
+                            </Border.Effect>
+                            <Grid>
+                                <Border Width="4" HorizontalAlignment="Left" CornerRadius="14,0,0,14"
+                                        Background="{Binding Status, Converter={StaticResource TableStatusBrush}}"/>
+                                <Grid Margin="20,16,16,16">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <DockPanel Grid.Row="0">
+                                        <Border DockPanel.Dock="Right" Style="{StaticResource StatusBadge}"
+                                                Background="{Binding Status, Converter={StaticResource TableStatusBrush}}" VerticalAlignment="Top">
+                                            <TextBlock Text="{Binding Status, Converter={StaticResource TableStatusText}}"
+                                                       FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                        </Border>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding TableNumber}" FontSize="36" FontWeight="Bold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" FontFamily="{StaticResource FontMono}"/>
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource CaptionText}"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,8,0,0">
+                                        <TextBlock Style="{StaticResource CaptionText}">
+                                            <Run Text="Kapasite "/><Run Text="{Binding Capacity}" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding OpenedAt, Converter={StaticResource Duration}}" Style="{StaticResource CaptionText}" Margin="0,4,0,0"/>
+                                        <TextBlock Text="{Binding TotalAmount, Converter={StaticResource Currency}}"
+                                                   FontFamily="{StaticResource FontMono}" FontSize="18" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                    <Border Grid.Row="2" HorizontalAlignment="Right" Background="#243056" CornerRadius="14"
+                                            Width="30" Height="30" Visibility="{Binding WaiterInitials, Converter={StaticResource NullToVis}}">
+                                        <TextBlock Text="{Binding WaiterInitials}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   FontSize="10" FontWeight="Bold" Foreground="{StaticResource AccentPrimaryBrush}"/>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <Border Grid.RowSpan="3" Background="#B0000000" Visibility="{Binding IsSessionPanelOpen, Converter={StaticResource BoolToVis}}">
+            <Border HorizontalAlignment="Right" Width="760" Background="{StaticResource BgSurfaceBrush}"
+                    BorderBrush="{StaticResource BorderSubtleBrush}" BorderThickness="1,0,0,0">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="24" ShadowDepth="-4" Opacity="0.5" Direction="180"/>
+                </Border.Effect>
+                <Grid>
+                    <views:SessionDetailView DataContext="{Binding SessionDetail}"/>
+                    <Button HorizontalAlignment="Right" VerticalAlignment="Top" Margin="20" Style="{StaticResource GhostButton}"
+                            Command="{Binding CloseSessionPanelCommand}" Content="✕" FontSize="16"/>
+                </Grid>
+            </Border>
+        </Border>
+
+        <Border Grid.RowSpan="3" Background="#B0000000" Visibility="{Binding IsNewSessionDialogOpen, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource CardBorder}" Width="400" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="Yeni Oturum" Style="{StaticResource Heading2}" FontSize="20" Margin="0,0,0,8"/>
+                    <TextBlock Text="{Binding SelectedTableForNewSession.Name}" Style="{StaticResource PageSubtitle}" Margin="0,0,0,20"/>
+                    <TextBlock Text="MİSAFİR SAYISI" Style="{StaticResource LabelText}"/>
+                    <TextBox Text="{Binding NewSessionGuestCount, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource TextBoxStyle}" Margin="0,0,0,24"/>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Aç" Command="{Binding OpenNewSessionCommand}" Style="{StaticResource PrimaryButton}"/>
+                        <Button DockPanel.Dock="Right" Content="İptal" Command="{Binding CloseNewSessionDialogCommand}" Style="{StaticResource SecondaryButton}" Margin="0,0,10,0"/>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>
