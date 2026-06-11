@@ -55,8 +55,7 @@ public class OrderService : IOrderService
         var item = await _context.OrderItems.FindAsync(new object[] { orderItemId }, cancellationToken)
             ?? throw new BusinessException("Sipariş bulunamadı.");
 
-        if (!item.RowVersion.SequenceEqual(rowVersion))
-            throw new ConcurrencyException();
+        if (item.Status == newStatus) return; // Already in desired state — no-op
 
         item.Status = newStatus;
         if (newStatus == OrderItemStatus.Preparing && item.SentToKitchenAt == null)

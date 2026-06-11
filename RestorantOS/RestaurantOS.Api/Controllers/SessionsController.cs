@@ -33,59 +33,40 @@ public class SessionsController : ControllerBase
     [HttpPost("{id:guid}/orders")]
     public async Task<IActionResult> AddOrder(Guid id, [FromBody] AddOrderRequest request, CancellationToken ct)
     {
-        var detail = await _sessionService.GetSessionDetailAsync(id, ct)
-            ?? throw new Application.Exceptions.BusinessException("Oturum bulunamadı.");
-
         var session = await _sessionService.AddOrderItemAsync(
             id, request.MenuItemId, request.Quantity, User.GetUserId(),
-            request.Notes, detail.RowVersion, ct);
+            request.Notes, Array.Empty<byte>(), ct);
         return Ok(session);
     }
 
     [HttpDelete("{sessionId:guid}/orders/{orderItemId:guid}")]
     public async Task<IActionResult> RemoveOrder(Guid sessionId, Guid orderItemId, CancellationToken ct)
     {
-        var detail = await _sessionService.GetSessionDetailAsync(sessionId, ct)
-            ?? throw new Application.Exceptions.BusinessException("Oturum bulunamadı.");
-
-        var item = detail.OrderItems.FirstOrDefault(i => i.OrderItemId == orderItemId)
-            ?? throw new Application.Exceptions.BusinessException("Sipariş bulunamadı.");
-
         var session = await _sessionService.RemoveOrderItemAsync(
-            orderItemId, User.GetUserId(), "İptal", User.IsAdmin(), item.RowVersion, ct);
+            orderItemId, User.GetUserId(), "İptal", User.IsAdmin(), Array.Empty<byte>(), ct);
         return Ok(session);
     }
 
     [HttpPost("{id:guid}/bill")]
     public async Task<IActionResult> RequestBill(Guid id, CancellationToken ct)
     {
-        var detail = await _sessionService.GetSessionDetailAsync(id, ct)
-            ?? throw new Application.Exceptions.BusinessException("Oturum bulunamadı.");
-
-        var session = await _sessionService.RequestBillAsync(id, detail.RowVersion, ct);
+        var session = await _sessionService.RequestBillAsync(id, Array.Empty<byte>(), ct);
         return Ok(session);
     }
 
     [HttpPost("{id:guid}/payments")]
     public async Task<IActionResult> RecordPayment(Guid id, [FromBody] PaymentRequest request, CancellationToken ct)
     {
-        var detail = await _sessionService.GetSessionDetailAsync(id, ct)
-            ?? throw new Application.Exceptions.BusinessException("Oturum bulunamadı.");
-
         var session = await _sessionService.RecordPaymentAsync(
             id, request.Amount, request.Method, User.GetUserId(),
-            request.ChangeGiven, request.ReferenceNo, detail.RowVersion, ct);
+            request.ChangeGiven, request.ReferenceNo, Array.Empty<byte>(), ct);
         return Ok(session);
     }
 
     [HttpPost("{id:guid}/cancel")]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
     {
-        var detail = await _sessionService.GetSessionDetailAsync(id, ct)
-            ?? throw new Application.Exceptions.BusinessException("Oturum bulunamadı.");
-
-        await _sessionService.CancelSessionAsync(id, User.GetUserId(), "İptal edildi", detail.RowVersion, ct);
+        await _sessionService.CancelSessionAsync(id, User.GetUserId(), "İptal edildi", Array.Empty<byte>(), ct);
         return Ok(new { success = true });
     }
-
 }

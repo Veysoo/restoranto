@@ -97,4 +97,52 @@ public class MenuService : IMenuService
         await _context.SaveChangesAsync(cancellationToken);
         return new MenuCategoryDto { CategoryId = category.CategoryId, Name = name, Icon = icon, DisplayOrder = category.DisplayOrder, IsActive = true };
     }
+
+    public async Task DeleteCategoryAsync(Guid categoryId, CancellationToken cancellationToken = default)
+    {
+        var category = await _context.MenuCategories
+            .Include(c => c.MenuItems)
+            .FirstOrDefaultAsync(c => c.CategoryId == categoryId, cancellationToken)
+            ?? throw new Application.Exceptions.BusinessException("Kategori bulunamadı.");
+
+        var hasOrders = await _context.OrderItems
+            .AnyAsync(o => category.MenuItems.Select(m => m.MenuItemId).Contains(o.MenuItemId), cancellationToken);
+
+        if (hasOrders)
+        {
+            // Geçmişte sipariş varsa sadece pasife çek
+            category.IsActive = false;
+            foreach (var item in category.MenuItems)
+            {
+                item.IsAvailable = false;
+                item.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+        else
+        {
+            _context.MenuItems.RemoveRange(category.MenuItems);
+            _context.MenuCategories.Remove(category);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteMenuItemAsync(Guid menuItemId, CancellationToken cancellationToken = default)
+    {
+        var entity = await _context.MenuItems.FindAsync(new object[] { menuItemId }, cancellationToken)
+            ?? throw new Application.Exceptions.BusinessException("Ürün bulunamadı.");
+
+        var hasOrders = await _context.OrderItems.AnyAsync(o => o.MenuItemId == menuItemId, cancellationToken);
+        if (hasOrders)
+        {
+            entity.IsAvailable = false;
+            entity.UpdatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            _context.MenuItems.Remove(entity);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

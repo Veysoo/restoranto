@@ -18,8 +18,10 @@ RUN npm run build
 
 # ---- Runtime: API + Nginx (tek container) ----
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends nginx \
+RUN rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get update -o Acquire::CompressionTypes::Order::=gz \
+    && apt-get install -y --no-install-recommends nginx netcat-openbsd wget \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /etc/nginx/sites-enabled/default
 

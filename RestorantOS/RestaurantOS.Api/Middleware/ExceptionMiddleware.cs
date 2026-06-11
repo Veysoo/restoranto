@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using RestaurantOS.Application.Exceptions;
 
 namespace RestaurantOS.Api.Middleware;
@@ -23,7 +24,7 @@ public class ExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "API hatası");
+            _logger.LogError(ex, "API hatası: {Path}", context.Request.Path);
             await WriteErrorAsync(context, ex);
         }
     }
@@ -33,9 +34,10 @@ public class ExceptionMiddleware
         var (status, message) = ex switch
         {
             BusinessException be => (HttpStatusCode.BadRequest, be.Message),
-            ConcurrencyException => (HttpStatusCode.Conflict, "Kayıt başka bir kullanıcı tarafından güncellendi. Sayfayı yenileyin."),
+            ConcurrencyException => (HttpStatusCode.Conflict, "Kayıt başka biri tarafından güncellendi. Sayfayı yenileyin."),
+            DbUpdateConcurrencyException => (HttpStatusCode.Conflict, "Kayıt başka biri tarafından güncellendi. Lütfen tekrar deneyin."),
             UnauthorizedAccessException ue => (HttpStatusCode.Unauthorized, ue.Message),
-            _ => (HttpStatusCode.InternalServerError, "Beklenmeyen bir hata oluştu.")
+            _ => (HttpStatusCode.InternalServerError, "Sunucu hatası oluştu.")
         };
 
         context.Response.ContentType = "application/json";

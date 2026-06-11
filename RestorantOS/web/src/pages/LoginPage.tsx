@@ -1,10 +1,13 @@
 import { FormEvent, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
-import { api, storeAuth } from '../api';
+import { api } from '../api';
+import { useSiteConfig } from '../hooks/useSiteConfig';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const { siteUrl, siteHost } = useSiteConfig();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -14,11 +17,10 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const user = await api.login(username, password);
-      storeAuth(user);
+      await api.login(username, password);
       navigate('/floor');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Giriş başarısız');
+      setError(err instanceof Error ? err.message : 'Kullanıcı adı veya şifre hatalı.');
     } finally {
       setLoading(false);
     }
@@ -26,26 +28,82 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="card login-card">
-        <h1>RestaurantOS</h1>
-        <p>Ağ üzerinden erişim — garson, kasa ve mobil</p>
-        {error && <div className="error-msg">{error}</div>}
-        <form onSubmit={submit}>
-          <div className="form-group">
-            <label>KULLANICI ADI</label>
-            <input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
+      <div className="login-wrap">
+        {/* Sol taraf: giriş formu */}
+        <div className="card login-card">
+          <div className="login-logo">
+            <div className="login-logo-icon">R</div>
+            <div>
+              <div className="login-logo-text">RestaurantOS</div>
+              <div className="login-logo-sub">Restoran Yönetim Sistemi</div>
+            </div>
           </div>
-          <div className="form-group">
-            <label>ŞİFRE</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+
+          <h2>Hoş Geldiniz</h2>
+          <p className="login-desc">Hesabınızla giriş yapın</p>
+
+          {error && <div className="error-msg">{error}</div>}
+
+          <form onSubmit={submit}>
+            <div className="form-group">
+              <label>Kullanıcı Adı</label>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                placeholder="kullanıcı adınız"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Şifre</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}>
+              {loading ? 'Giriş yapılıyor…' : 'Giriş Yap →'}
+            </button>
+          </form>
+        </div>
+
+        {/* Sağ taraf: QR + özellikler */}
+        <div className="login-hero">
+          {siteUrl && (
+            <div className="qr-panel">
+              <div className="qr-panel-title">📱 Mobil Erişim</div>
+              <div className="qr-panel-url">{siteHost}</div>
+              <div className="qr-wrap">
+                <QRCodeSVG value={siteUrl} size={150} bgColor="#171d30" fgColor="#e8edf5" level="M" />
+              </div>
+              <p className="qr-hint">Aynı Wi-Fi ağındaki telefon veya tabletle<br />QR kodu tarayın — direkt giriş ekranı açılır</p>
+            </div>
+          )}
+
+          <div className="login-features">
+            <div className="login-feature-item">
+              <span className="login-feature-icon">🏠</span>
+              <span>Canlı kat planı ile masa durumları anlık güncellenir</span>
+            </div>
+            <div className="login-feature-item">
+              <span className="login-feature-icon">🍽️</span>
+              <span>Sipariş ekle, ödeme al, mutfak kanban ile takip et</span>
+            </div>
+            <div className="login-feature-item">
+              <span className="login-feature-icon">📊</span>
+              <span>Günlük gelir ve satış analizlerini görüntüle</span>
+            </div>
+            <div className="login-feature-item">
+              <span className="login-feature-icon">🔄</span>
+              <span>Ağdaki tüm cihazlar eş zamanlı çalışır</span>
+            </div>
           </div>
-          <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginTop: 8 }}>
-            {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-          </button>
-        </form>
-        <p style={{ marginTop: 20, fontSize: 12, color: 'var(--text-secondary)' }}>
-          Demo: admin / admin123
-        </p>
+        </div>
       </div>
     </div>
   );

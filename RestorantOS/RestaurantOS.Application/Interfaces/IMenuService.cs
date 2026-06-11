@@ -9,4 +9,6 @@ public interface IMenuService
     Task<MenuItemDto> UpdateMenuItemAsync(MenuItemDto item, CancellationToken cancellationToken = default);
     Task ToggleAvailabilityAsync(Guid menuItemId, CancellationToken cancellationToken = default);
     Task<MenuCategoryDto> CreateCategoryAsync(string name, string icon, CancellationToken cancellationToken = default);
+    Task DeleteMenuItemAsync(Guid menuItemId, CancellationToken cancellationToken = default);
+    Task DeleteCategoryAsync(Guid categoryId, CancellationToken cancellationToken = default);
 }

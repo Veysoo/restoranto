@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, formatCurrency } from '../api';
 import SessionPanel from '../components/SessionPanel';
+import { usePolling } from '../hooks/usePolling';
 import type { TableCard, TableStatus } from '../types';
 
-const statusText: Record<TableStatus, string> = {
-  Empty: 'BOŞTA', Occupied: 'DOLU', Billed: 'HESAP İSTEDİ', Paid: 'ÖDENDİ',
+const statusBadge: Record<TableStatus, string> = {
+  Empty: 'badge-empty', Occupied: 'badge-occupied', Billed: 'badge-billed', Paid: 'badge-paid',
 };
-
-const statusClass: Record<TableStatus, string> = {
-  Empty: 'status-empty', Occupied: 'status-occupied', Billed: 'status-billed', Paid: 'status-paid',
+const statusLabel: Record<TableStatus, string> = {
+  Empty: 'BOŞTA', Occupied: 'DOLU', Billed: 'HESAP', Paid: 'ÖDENDİ',
+};
+const statusBarClass: Record<TableStatus, string> = {
+  Empty: 'empty', Occupied: 'occupied', Billed: 'billed', Paid: 'paid',
 };
 
 export default function FloorPage() {
@@ -30,19 +33,15 @@ export default function FloorPage() {
     api.getSections().then((s) => setSections(['Tümü', ...s])).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    loadTables().catch((e) => setError(e.message));
-    const t = setInterval(() => loadTables().catch(() => {}), 5000);
-    return () => clearInterval(t);
-  }, [loadTables]);
+  usePolling(loadTables, 2000, [loadTables]);
 
   const openTable = (table: TableCard) => {
     if (table.status === 'Empty') {
       setNewSessionTable(table);
       setGuestCount(2);
-      return;
+    } else if (table.sessionId) {
+      setSessionId(table.sessionId);
     }
-    if (table.sessionId) setSessionId(table.sessionId);
   };
 
   const confirmNewSession = async () => {
@@ -53,55 +52,99 @@ export default function FloorPage() {
       await loadTables();
       setSessionId(session.sessionId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Hata');
+      setError(e instanceof Error ? e.message : 'Oturum açılamadı.');
     }
   };
 
+  const occupied = tables.filter((t) => t.status !== 'Empty').length;
+
   return (
     <div>
-      <h1 className="page-title">Kat Planı</h1>
-      <p className="page-subtitle">Masa durumlarını canlı takip edin — ağdaki tüm cihazlar senkron</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 className="page-title">Kat Planı</h1>
+          <p className="page-subtitle">Canlı masa durumları · {occupied}/{tables.length} dolu</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <span className="badge badge-empty" style={{ padding: '6px 12px', fontSize: 12 }}>⬜ Boşta</span>
+          <span className="badge badge-occupied" style={{ padding: '6px 12px', fontSize: 12 }}>🟡 Dolu</span>
+          <span className="badge badge-billed" style={{ padding: '6px 12px', fontSize: 12 }}>🔴 Hesap</span>
+        </div>
+      </div>
 
-      {error && <div className="error-msg">{error}</div>}
+      {error && <div className="error-msg" onClick={() => setError('')}>{error}</div>}
 
-      <div style={{ marginBottom: 20 }}>
+      <div className="section-pills">
         {sections.map((s) => (
-          <span key={s} className={`pill${selectedSection === s ? ' active' : ''}`}
-            onClick={() => setSelectedSection(s)}>{s}</span>
+          <span
+            key={s}
+            className={`pill${selectedSection === s ? ' active' : ''}`}
+            onClick={() => setSelectedSection(s)}
+          >
+            {s}
+          </span>
         ))}
       </div>
 
       <div className="tables-grid">
         {tables.map((table) => (
-          <div key={table.tableId} className="table-card" onClick={() => openTable(table)}>
-            <div className={`table-card-bar ${statusClass[table.status]}`} />
-            <span className={`table-badge ${statusClass[table.status]}`}>{statusText[table.status]}</span>
-            <div className="table-number">{table.tableNumber}</div>
-            <div className="table-name">{table.name}</div>
-            <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-secondary)' }}>
-              Kapasite {table.capacity}
-            </div>
-            {table.totalAmount > 0 && (
-              <div className="mono" style={{ marginTop: 8, fontSize: 18, fontWeight: 600 }}>
-                {formatCurrency(table.totalAmount)}
+          <div
+            key={table.tableId}
+            className={`table-card ${statusBarClass[table.status]}`}
+            onClick={() => openTable(table)}
+          >
+            <div className={`status-bar ${statusBarClass[table.status]}`} />
+
+            <div className="table-top">
+              <div>
+                <div className="table-num">{table.tableNumber}</div>
+                <div className="table-name">{table.name}</div>
               </div>
-            )}
+              <span className={`badge ${statusBadge[table.status]}`}>
+                {statusLabel[table.status]}
+              </span>
+            </div>
+
+            <div className="table-bottom">
+              {table.totalAmount > 0 ? (
+                <div className="table-amount">{formatCurrency(table.totalAmount)}</div>
+              ) : null}
+              <div className="table-meta">
+                {table.capacity} kişilik
+                {table.status !== 'Empty' && table.totalAmount === 0 ? ' · Sipariş bekleniyor' : ''}
+              </div>
+            </div>
           </div>
         ))}
+
+        {tables.length === 0 && (
+          <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', padding: 48, color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>🏠</div>
+            <p>Bu bölümde masa yok. Yönetim ekranından masa ekleyin.</p>
+          </div>
+        )}
       </div>
 
       {newSessionTable && (
-        <div className="modal">
-          <div className="card modal-box">
-            <h2 style={{ marginBottom: 8 }}>Yeni Oturum</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 20 }}>{newSessionTable.name}</p>
+        <div className="modal" onClick={() => setNewSessionTable(null)}>
+          <div className="card modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-title">Yeni Oturum Aç</div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 20, fontSize: 14 }}>
+              {newSessionTable.name} — {newSessionTable.capacity} kişilik
+            </p>
             <div className="form-group">
-              <label>MİSAFİR SAYISI</label>
-              <input type="number" min={1} value={guestCount} onChange={(e) => setGuestCount(+e.target.value)} />
+              <label>Misafir Sayısı</label>
+              <input
+                type="number"
+                min={1}
+                max={newSessionTable.capacity}
+                value={guestCount}
+                onChange={(e) => setGuestCount(+e.target.value)}
+              />
             </div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-              <button className="btn-secondary" onClick={() => setNewSessionTable(null)}>İptal</button>
-              <button className="btn-primary" onClick={confirmNewSession}>Aç</button>
+            <div className="modal-actions">
+              <button className="btn-ghost" onClick={() => setNewSessionTable(null)}>İptal</button>
+              <button className="btn-primary" onClick={confirmNewSession}>Masayı Aç →</button>
             </div>
           </div>
         </div>

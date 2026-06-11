@@ -1,5 +1,25 @@
 namespace RestaurantOS.Application.DTOs.Dashboard;
 
+public class SalesReportDto
+{
+    public DateTime From { get; set; }
+    public DateTime To { get; set; }
+    public decimal TotalRevenue { get; set; }
+    public int TotalSessions { get; set; }
+    public int TotalItemsSold { get; set; }
+    public decimal AverageTicket { get; set; }
+    public List<DailyRevenueDetailDto> DailyBreakdown { get; set; } = new();
+    public List<TodaySoldItemDto> TopItems { get; set; } = new();
+}
+
+public class DailyRevenueDetailDto
+{
+    public DateTime Date { get; set; }
+    public decimal Revenue { get; set; }
+    public int Sessions { get; set; }
+    public int ItemsSold { get; set; }
+}
+
 public class DashboardDto
 {
     public decimal TodayRevenue { get; set; }

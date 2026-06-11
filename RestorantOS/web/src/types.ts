@@ -26,6 +26,16 @@ export interface TableCard {
   waiterInitials?: string;
 }
 
+export interface TableSettings {
+  tableId: string;
+  tableNumber: number;
+  name: string;
+  capacity: number;
+  section: string;
+  isActive: boolean;
+  displayOrder: number;
+}
+
 export interface MenuItem {
   menuItemId: string;
   categoryId: string;
@@ -34,6 +44,7 @@ export interface MenuItem {
   price: number;
   taxRate: number;
   isAvailable: boolean;
+  prepTimeMinutes?: number;
 }
 
 export interface MenuCategory {
@@ -86,4 +97,34 @@ export interface Dashboard {
   todaySessionCount: number;
   todayItemsSold: number;
   todaySoldItems: TodaySoldItem[];
+}
+
+export interface DailyRevenueDetail {
+  date: string;
+  revenue: number;
+  sessions: number;
+  itemsSold: number;
+}
+
+export interface SalesReport {
+  from: string;
+  to: string;
+  totalRevenue: number;
+  totalSessions: number;
+  totalItemsSold: number;
+  averageTicket: number;
+  dailyBreakdown: DailyRevenueDetail[];
+  topItems: TodaySoldItem[];
+}
+
+export interface KanbanOrder {
+  orderItemId: string;
+  itemName: string;
+  quantity: number;
+  status: OrderItemStatus;
+  tableNumber: number;
+  tableName: string;
+  section: string;
+  createdAt: string;
+  rowVersion: string;
 }

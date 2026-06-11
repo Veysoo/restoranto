@@ -1,9 +1,6 @@
-bin/
-obj/
-data/
-*.user
-*.suo
-.vs/
-.idea/
-*.bak
-appsettings.Development.json
+.env
+docker/dnsmasq.conf
+**/bin/
+**/obj/
+web/node_modules/
+web/dist/

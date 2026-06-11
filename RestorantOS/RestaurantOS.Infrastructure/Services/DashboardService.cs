@@ -119,4 +119,81 @@ public class DashboardService : IDashboardService
             TodaySoldItems = todaySoldItems
         };
     }
+
+    public async Task<SalesReportDto> GetSalesReportAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
+    {
+        var fromUtc = from.Date;
+        var toUtc = to.Date.AddDays(1); // exclusive upper bound
+
+        var payments = await _context.Payments
+            .Where(p => !p.IsVoid && p.PaidAt >= fromUtc && p.PaidAt < toUtc)
+            .Include(p => p.Session)
+            .ToListAsync(cancellationToken);
+
+        var totalRevenue = payments.Sum(p => p.Amount);
+        var sessions = payments.Select(p => p.SessionId).Distinct().Count();
+
+        var itemsSold = await _context.OrderItems
+            .Include(o => o.Session)
+            .Where(o => o.Status != OrderItemStatus.Cancelled
+                && o.Session.Status == SessionStatus.Paid
+                && o.Session.ClosedAt >= fromUtc && o.Session.ClosedAt < toUtc)
+            .SumAsync(o => (int?)o.Quantity, cancellationToken) ?? 0;
+
+        var dailyBreakdown = await _context.Payments
+            .Where(p => !p.IsVoid && p.PaidAt >= fromUtc && p.PaidAt < toUtc)
+            .GroupBy(p => p.PaidAt.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                Revenue = g.Sum(p => p.Amount),
+                Sessions = g.Select(p => p.SessionId).Distinct().Count()
+            })
+            .OrderBy(x => x.Date)
+            .ToListAsync(cancellationToken);
+
+        // Fill missing days with zeros
+        var allDays = new List<DailyRevenueDetailDto>();
+        for (var d = fromUtc; d < toUtc; d = d.AddDays(1))
+        {
+            var match = dailyBreakdown.FirstOrDefault(x => x.Date == d);
+            allDays.Add(new DailyRevenueDetailDto
+            {
+                Date = d,
+                Revenue = match?.Revenue ?? 0,
+                Sessions = match?.Sessions ?? 0,
+                ItemsSold = 0
+            });
+        }
+
+        // Top items in range
+        var topItems = await _context.OrderItems
+            .Include(o => o.MenuItem)
+            .Include(o => o.Session)
+            .Where(o => o.Status != OrderItemStatus.Cancelled
+                && o.Session.Status == SessionStatus.Paid
+                && o.Session.ClosedAt >= fromUtc && o.Session.ClosedAt < toUtc)
+            .GroupBy(o => o.MenuItem.Name)
+            .Select(g => new TodaySoldItemDto
+            {
+                ItemName = g.Key,
+                Quantity = g.Sum(x => x.Quantity),
+                Revenue = g.Sum(x => x.LineTotal)
+            })
+            .OrderByDescending(t => t.Revenue)
+            .Take(20)
+            .ToListAsync(cancellationToken);
+
+        return new SalesReportDto
+        {
+            From = fromUtc,
+            To = to.Date,
+            TotalRevenue = totalRevenue,
+            TotalSessions = sessions,
+            TotalItemsSold = itemsSold,
+            AverageTicket = sessions > 0 ? Math.Round(totalRevenue / sessions, 2) : 0,
+            DailyBreakdown = allDays,
+            TopItems = topItems
+        };
+    }
 }

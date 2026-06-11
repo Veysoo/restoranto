@@ -60,6 +60,20 @@ public class SettingsService : ISettingsService
             }).ToListAsync(cancellationToken);
     }
 
+    public async Task DeleteTableAsync(Guid tableId, CancellationToken cancellationToken = default)
+    {
+        var entity = await _context.Tables.FindAsync(new object[] { tableId }, cancellationToken)
+            ?? throw new Application.Exceptions.BusinessException("Masa bulunamadı.");
+
+        var hasOpenSession = await _context.Sessions
+            .AnyAsync(s => s.TableId == tableId && s.ClosedAt == null && s.Status != SessionStatus.Cancelled, cancellationToken);
+        if (hasOpenSession)
+            throw new Application.Exceptions.BusinessException("Açık oturumu olan masa silinemez.");
+
+        entity.IsActive = false;
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<TableSettingsDto> SaveTableAsync(TableSettingsDto table, CancellationToken cancellationToken = default)
     {
         Table entity;
