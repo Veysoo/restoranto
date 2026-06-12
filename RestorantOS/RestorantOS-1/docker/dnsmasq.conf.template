@@ -1,0 +1,5 @@
+# Otomatik uretilir - Startup.bat
+no-resolv
+log-queries
+address=/restaurantos.local/@HOST_IP@
+address=/restaurantos/@HOST_IP@

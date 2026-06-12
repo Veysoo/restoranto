@@ -18,7 +18,7 @@ services:
       timeout: 10s
       retries: 15
       start_period: 60s
-    restart: always
+    restart: unless-stopped
 
   app:
     build:
@@ -41,7 +41,7 @@ services:
     networks:
       - default
       - sanal-network
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/api/health || exit 1"]
       interval: 15s
