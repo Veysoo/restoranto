@@ -1,6 +1,0 @@
-.env
-docker/dnsmasq.conf
-**/bin/
-**/obj/
-web/node_modules/
-web/dist/
