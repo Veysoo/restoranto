@@ -20,6 +20,8 @@ echo  [1/6]  Docker kontrol ediliyor...
 
 where docker >nul 2>&1
 if not errorlevel 1 goto :docker_found
+if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" goto :docker_found
+if exist "%LocalAppData%\Programs\Docker\Docker\Docker Desktop.exe" goto :docker_found
 
 echo         Docker bulunamadi. Otomatik kuruluyor...
 echo.
@@ -102,6 +104,13 @@ echo         LAN IP: %HOST_LAN_IP%  OK
 :: ADIM 4: Container'lari baslat / guncelle
 :: ============================================
 echo  [4/6]  Container'lar baslatiliyor (ilk seferde build 3-5 dk surebilir)...
+
+:: sanal-network yoksa olustur (docker-compose external network hatasi onlenir)
+docker network inspect sanal-network >nul 2>&1
+if errorlevel 1 (
+    echo         sanal-network olusturuluyor...
+    docker network create sanal-network >nul 2>&1
+)
 
 docker-compose -f "%APP%\docker-compose.yml" --env-file "%APP%\.env" up -d --build
 if errorlevel 1 (
@@ -196,36 +205,56 @@ goto :EOF
 :: ============================================
 :fn_install_docker
 
-:: Once winget ile dene (Windows 10 2004+ ve Windows 11 default gelir)
+:: PATH disinda kurulu olabilir, once exe konumlarini kontrol et
+if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe"          exit /b 0
+if exist "%LocalAppData%\Programs\Docker\Docker\Docker Desktop.exe" exit /b 0
+
+echo         Docker Desktop bulunamadi. Kurulum baslatiliyor...
+
+:: --- Yontem 1: winget (sessiz, tam otomatik) ---
 where winget >nul 2>&1
 if not errorlevel 1 (
-    echo         winget ile Docker Desktop kuruluyor...
-    winget install --id Docker.DockerDesktop --accept-source-agreements --accept-package-agreements --silent
+    echo         winget deneniyor...
+    winget install --id Docker.DockerDesktop -e --silent ^
+        --accept-source-agreements --accept-package-agreements ^
+        --disable-interactivity >nul 2>&1
     if not errorlevel 1 (
-        echo         Docker Desktop basariyla kuruldu.
+        echo         Docker Desktop winget ile kuruldu.
         exit /b 0
     )
-    echo         winget basarisiz, dogrudan indirme deneniyor...
+    echo         winget basarisiz, curl ile indirme deneniyor...
 )
 
-:: winget yoksa veya basarisizsa: dogrudan indir
-set "INST=%TEMP%\DockerDesktopInstaller.exe"
-echo         Docker Desktop indiriliyor (~600 MB, internet hizinıza gore birkac dakika surebilir...^)
-powershell -NoProfile -Command ^
-    "Invoke-WebRequest -Uri 'https://desktop.docker.com/win/main/amd64/DockerDesktopInstaller.exe' -OutFile '%INST%' -UseBasicParsing"
+:: --- Yontem 2: curl.exe ile indir (Windows 10+ dahili, TLS sorunsuz) ---
+set "INST=%TEMP%\DockerSetup.exe"
+set "DURL=https://desktop.docker.com/win/main/amd64/DockerDesktopInstaller.exe"
+
+echo         Docker Desktop indiriliyor (~600 MB, lutfen bekleyin...^)
+curl.exe -L --progress-bar --retry 3 --retry-delay 5 -o "%INST%" "%DURL%"
 
 if not exist "%INST%" (
-    echo  [HATA] Indirme basarisiz. Internet baglantısını kontrol edin.
+    echo         curl basarisiz, PowerShell ile deneniyor...
+    powershell -NoProfile -Command ^
+        "[Net.ServicePointManager]::SecurityProtocol='Tls12,Tls13';" ^
+        "Invoke-WebRequest -Uri '%DURL%' -OutFile '%INST%' -UseBasicParsing"
+)
+
+if not exist "%INST%" (
+    echo.
+    echo  [HATA] Indirme basarisiz.
+    echo  Lutfen su adresten elle kurun ve tekrar calistirin:
+    echo  https://docs.docker.com/desktop/install/windows-install/
     exit /b 1
 )
 
-echo         Yukleniyor (admin izni istenebilir^)...
+echo         Yukleniyor ^(Kullanici Hesabi Denetimi penceresi acilabilir^)...
 "%INST%" install --quiet --accept-license
 set ERR=%ERRORLEVEL%
 del "%INST%" >nul 2>&1
 
 if %ERR% neq 0 (
     echo  [HATA] Kurulum basarisiz ^(kod: %ERR%^).
+    echo  Lutfen manuel kurun: https://docs.docker.com/desktop/install/windows-install/
     exit /b 1
 )
 
