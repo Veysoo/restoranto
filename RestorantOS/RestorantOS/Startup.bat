@@ -95,8 +95,11 @@ if not defined HOST_LAN_IP set HOST_LAN_IP=localhost
 echo HOST_LAN_IP=%HOST_LAN_IP%  > "%APP%\.env"
 echo EXTERNAL_PORT=8080         >> "%APP%\.env"
 
-netsh advfirewall firewall add rule name="RestaurantOS-8080" dir=in action=allow protocol=TCP localport=8080 >nul 2>&1
-netsh advfirewall firewall add rule name="RestaurantOS-HTTP"  dir=in action=allow protocol=TCP localport=80  >nul 2>&1
+:: Guvenlik duvari + Docker portproxy (UAC ile yonetici izni ister)
+echo         Guvenlik duvari ve portproxy ayarlaniyor...
+echo         (Kucuk bir izin penceresi acilacak - Evet deyin)
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File ""%APP%\scripts\setup-network.ps1""' -Verb RunAs -Wait"
+echo         Ag kurulumu tamamlandi.  OK
 
 echo         LAN IP: %HOST_LAN_IP%  OK
 

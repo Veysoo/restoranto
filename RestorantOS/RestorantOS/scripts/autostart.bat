@@ -124,6 +124,13 @@ if errorlevel 1 (
     docker network create sanal-network >nul 2>&1
 )
 
+:: Docker WSL2 portproxy - dis ag erisimi icin (sessiz, hata olsa devam et)
+netsh interface portproxy show v4tov4 | findstr "8080" >nul 2>&1
+if errorlevel 1 (
+    echo         Portproxy ayarlaniyor...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process powershell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File ""%APP_DIR%\scripts\setup-network.ps1""' -Verb RunAs -Wait" >nul 2>&1
+)
+
 docker-compose -f "%APP_DIR%\docker-compose.yml" --env-file "%APP_DIR%\.env" up -d
 set DC_ERR=%ERRORLEVEL%
 echo [%date% %time%] docker-compose exit: %DC_ERR% >> "%LOG%"
