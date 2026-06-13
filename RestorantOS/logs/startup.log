@@ -1,6 +1,0 @@
-[Cmt 13.06.2026 10:04:10,33] === Startup basladi === 
-[Cmt 13.06.2026 10:08:53,56] WSL2 etkinlestirildi 
-[Cmt 13.06.2026 10:09:28,21] LAN IP: localhost 
-[Cmt 13.06.2026 10:09:28,64] Firewall kurallari ayarlandi 
-[Cmt 13.06.2026 10:10:29,24] Containerlar baslatildi 
-[Cmt 13.06.2026 10:10:31,94] BASARILI - http://localhost:8080 
