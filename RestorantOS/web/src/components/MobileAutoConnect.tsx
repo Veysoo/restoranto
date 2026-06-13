@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
   isMobileDevice,
+  isPrivateLanHost,
   probeHealth,
   redirectToServer,
   saveServerUrl,
   scanForServer,
 } from '../lib/mobilDiscovery';
 
-/** Mobilde uygulama açılınca sunucu yoksa otomatik tarama ekranı */
 export default function MobileAutoConnect({ children }: { children: React.ReactNode }) {
   const [phase, setPhase] = useState<'checking' | 'scanning' | 'ready' | 'error'>('checking');
   const [progress, setProgress] = useState(0);
@@ -36,13 +36,31 @@ export default function MobileAutoConnect({ children }: { children: React.ReactN
       setPhase('ready');
       return;
     }
-    probeHealth(window.location.origin).then((ok) => {
-      if (ok) {
-        setPhase('ready');
-        return;
+
+    const host = window.location.hostname;
+
+    // Telefon zaten LAN IP ile sunucuya bağlandıysa direkt göster
+    if (isPrivateLanHost(host) || host === 'localhost' || host === '127.0.0.1') {
+      setPhase('ready');
+      return;
+    }
+
+    // Farklı bir adresten açılmışsa health check yap
+    let cancelled = false;
+    const tryConnect = async () => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (cancelled) return;
+        const ok = await probeHealth(window.location.origin, 2500);
+        if (ok) {
+          if (!cancelled) setPhase('ready');
+          return;
+        }
       }
-      runScan();
-    });
+      if (!cancelled) runScan();
+    };
+
+    tryConnect();
+    return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (phase === 'ready') return <>{children}</>;

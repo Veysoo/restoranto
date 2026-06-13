@@ -80,7 +80,7 @@ export default function LoginPage() {
               <div className="qr-panel-url">{siteHost}</div>
               <div className="qr-wrap">
                 <QRCodeSVG
-                  value={`${siteUrl.replace(/\/$/, '')}/mobil.html`}
+                  value={`${siteUrl.replace(/\/$/, '')}/login`}
                   size={150}
                   bgColor="#ffffff"
                   fgColor="#0f4c81"
@@ -88,7 +88,7 @@ export default function LoginPage() {
                 />
               </div>
               <p className="qr-hint">
-                Telefonla QR kodu tarayın — sunucu otomatik bulunur.<br />
+                Telefonla QR kodu tarayın ve giriş yapın.<br />
                 Sonra <strong>Ana ekrana ekle</strong> ile kısayol oluşturun.
               </p>
             </div>

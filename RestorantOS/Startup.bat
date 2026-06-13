@@ -33,50 +33,50 @@ if %errorlevel% neq 0 (
 echo  [0/7] Yonetici yetkisi mevcut.  OK
 
 :: ============================================
-:: ADIM 1: WSL2 kontrol ve etkinlestirme
+:: ADIM 1: Sanallaştirma kontrol
 :: ============================================
-echo  [1/7] WSL2 / Sanallaştirma kontrol ediliyor...
+echo  [1/7] Sanallaştirma kontrol ediliyor...
 
-wsl --status >nul 2>&1
+:: Docker PATH'e ekle
+set "PATH=%ProgramFiles%\Docker\Docker\resources\bin;%LocalAppData%\Programs\Docker\Docker\resources\bin;%PATH%"
+
+:: Docker zaten kuruluysa WSL kontrolunu atla (Docker kendi halleder)
+where docker >nul 2>&1 && goto :wsl_done
+if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" goto :wsl_done
+if exist "%LocalAppData%\Programs\Docker\Docker\Docker Desktop.exe" goto :wsl_done
+
+:: Docker yok, WSL2/Sanallaştirma gerekli
+echo         Docker kurulmamis, sanallaştirma kontrol ediliyor...
+dism /online /get-featureinfo /featurename:VirtualMachinePlatform 2>nul | findstr /c:"State : Enabled" >nul 2>&1
+if not errorlevel 1 goto :wsl_done
+
+echo         Sanallaştirma etkinlestiriliyor...
+dism /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart >nul 2>&1
+dism /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart >nul 2>&1
+echo [%date% %time%] Sanallaştirma etkinlestirildi >> "%LOG%"
+
+dism /online /get-featureinfo /featurename:VirtualMachinePlatform 2>nul | findstr /c:"State : Enabled" >nul 2>&1
 if errorlevel 1 (
-    echo         WSL2 etkin degil. Etkinlestiriliyor...
-    echo         (Bu islem bilgisayar yeniden baslatma gerektirebilir)
-
-    dism /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart >nul 2>&1
-    dism /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart >nul 2>&1
-
-    echo         WSL2 guncelleniyor...
-    wsl --update >nul 2>&1
-    wsl --set-default-version 2 >nul 2>&1
-
-    echo [%date% %time%] WSL2 etkinlestirildi >> "%LOG%"
-
-    :: WSL2 zaten aktif mi tekrar kontrol
-    wsl --status >nul 2>&1
-    if errorlevel 1 (
-        echo.
-        echo  ╔══════════════════════════════════════════════════╗
-        echo  ║  WSL2 etkinlestirildi. BILGISAYAR YENIDEN        ║
-        echo  ║  BASLATILMALI. Restart sonrasi bu .bat dosyasini ║
-        echo  ║  tekrar calistirin.                              ║
-        echo  ╚══════════════════════════════════════════════════╝
-        echo.
-        echo [%date% %time%] WSL2 icin restart gerekli >> "%LOG%"
-        set /p RESTART="  Simdi yeniden baslatilsin mi? (E/H): "
-        if /i "!RESTART!"=="E" shutdown /r /t 10 /c "RestaurantOS - WSL2 icin yeniden baslatiliyor"
-        pause
-        exit /b 0
-    )
+    echo.
+    echo  ╔══════════════════════════════════════════════════╗
+    echo  ║  Sanallaştirma etkinlestirildi. BILGISAYAR        ║
+    echo  ║  YENIDEN BASLATILMALI. Restart sonrasi bu .bat    ║
+    echo  ║  dosyasini tekrar calistirin.                     ║
+    echo  ╚══════════════════════════════════════════════════╝
+    echo.
+    set /p RESTART="  Simdi yeniden baslatilsin mi? (E/H): "
+    if /i "!RESTART!"=="E" shutdown /r /t 10 /c "RestaurantOS icin yeniden baslatiliyor"
+    pause
+    exit /b 0
 )
-echo         WSL2 / Sanallaştirma hazir.  OK
+
+:wsl_done
+echo         Sanallaştirma hazir.  OK
 
 :: ============================================
 :: ADIM 2: Docker kurulu mu kontrol et
 :: ============================================
 echo  [2/7] Docker kontrol ediliyor...
-
-:: Docker PATH'e ekle
-set "PATH=%ProgramFiles%\Docker\Docker\resources\bin;%LocalAppData%\Programs\Docker\Docker\resources\bin;%PATH%"
 
 where docker >nul 2>&1
 if not errorlevel 1 goto :docker_found
@@ -149,10 +149,9 @@ echo         Docker servisi hazir.  OK
 :: ============================================
 echo  [4/7] Ag yapilandiriliyor...
 
-:: IP tespiti: Hem DHCP hem static IP'leri bul, sanal adaptörleri ele
+:: IP tespiti: scripts\get-lan-ip.ps1 ile
 set "HOST_LAN_IP="
-for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command ^
-    "$ip = Get-NetIPAddress -AddressFamily IPv4 ^| Where-Object { $_.IPAddress -ne '127.0.0.1' -and $_.IPAddress -notlike '169.254.*' -and $_.IPAddress -notlike '172.17.*' -and $_.IPAddress -notlike '172.18.*' -and $_.IPAddress -notlike '172.19.*' -and $_.IPAddress -notlike '172.2?.*' -and $_.IPAddress -notlike '192.168.56.*' -and ($_.PrefixOrigin -eq 'Dhcp' -or $_.PrefixOrigin -eq 'Manual') -and $_.InterfaceAlias -notmatch 'vEthernet|Loopback|VMware|VirtualBox|WSL' } ^| Sort-Object -Property { if($_.PrefixOrigin -eq 'Dhcp'){0}else{1} } ^| Select-Object -First 1 -ExpandProperty IPAddress; if($ip){$ip}else{'localhost'}"`) do set HOST_LAN_IP=%%i
+for /f "usebackq delims=" %%i in (`powershell -NoProfile -ExecutionPolicy Bypass -File "%APP%\scripts\get-lan-ip.ps1"`) do set HOST_LAN_IP=%%i
 if not defined HOST_LAN_IP set HOST_LAN_IP=localhost
 
 :: .env dosyasini yaz

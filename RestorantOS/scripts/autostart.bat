@@ -97,8 +97,7 @@ echo [%date% %time%] Docker hazir >> "%LOG%"
 echo  [3/4] Ag adresi aliniyor...
 
 set "HOST_LAN_IP="
-for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command ^
-    "$ip = Get-NetIPAddress -AddressFamily IPv4 ^| Where-Object { $_.IPAddress -ne '127.0.0.1' -and $_.IPAddress -notlike '169.254.*' -and $_.IPAddress -notlike '172.17.*' -and $_.IPAddress -notlike '172.18.*' -and $_.IPAddress -notlike '172.19.*' -and $_.IPAddress -notlike '172.2?.*' -and $_.IPAddress -notlike '192.168.56.*' -and ($_.PrefixOrigin -eq 'Dhcp' -or $_.PrefixOrigin -eq 'Manual') -and $_.InterfaceAlias -notmatch 'vEthernet|Loopback|VMware|VirtualBox|WSL' } ^| Sort-Object -Property { if($_.PrefixOrigin -eq 'Dhcp'){0}else{1} } ^| Select-Object -First 1 -ExpandProperty IPAddress; if($ip){$ip}else{'localhost'}"`) do set HOST_LAN_IP=%%i
+for /f "usebackq delims=" %%i in (`powershell -NoProfile -ExecutionPolicy Bypass -File "%APP_DIR%\scripts\get-lan-ip.ps1"`) do set HOST_LAN_IP=%%i
 if not defined HOST_LAN_IP set HOST_LAN_IP=localhost
 
 echo HOST_LAN_IP=%HOST_LAN_IP%> "%APP_DIR%\.env"
