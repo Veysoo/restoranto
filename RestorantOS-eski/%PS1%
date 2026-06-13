@@ -1,0 +1,2 @@
+Continue = 'SilentlyContinue'  
+Write-Host 'ps1-ok'  

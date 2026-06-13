@@ -1,0 +1,11 @@
+**/bin
+**/obj
+**/.git
+**/.vs
+**/node_modules
+RestaurantOS.WPF/bin
+RestaurantOS.WPF/obj
+web/node_modules
+web/dist
+*.user
+*.suo

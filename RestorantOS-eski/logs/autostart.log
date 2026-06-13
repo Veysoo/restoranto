@@ -1,0 +1,11 @@
+[Cum 12.06.2026 23:28:59,28] === Autostart basladi === 
+[Cum 12.06.2026 23:28:59,28] APP_DIR: c:\Users\user\Desktop\APP\RestorantOS 
+[Cum 12.06.2026 23:28:59,76] Docker hazir 
+[Cum 12.06.2026 23:29:00,46] LAN IP: 192.168.1.102 
+[Cum 12.06.2026 23:29:11,58] docker-compose exit: 0 
+[Cum 12.06.2026 23:29:11,60] Basarili - 192.168.1.102:8080 
+[Cmt 13.06.2026 19:13:20,54] === Autostart basladi === 
+[Cmt 13.06.2026 19:13:34,97] Docker hazir 
+[Cmt 13.06.2026 19:13:40,07] LAN IP: 192.168.1.103 
+[Cmt 13.06.2026 19:13:43,61] docker compose exit: 0 
+[Cmt 13.06.2026 19:13:43,61] BASARILI - 192.168.1.103:8080 
