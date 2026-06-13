@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="RestaurantOS" />
+  <meta name="theme-color" content="#0f4c81" />
+  <title>RestaurantOS</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #f0f4f8;
+      min-height: 100svh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .card {
+      background: #fff; border-radius: 20px;
+      padding: 32px 24px; width: 100%; max-width: 380px;
+      box-shadow: 0 8px 32px rgba(15,76,129,.12);
+    }
+    .logo {
+      width: 60px; height: 60px; background: #0f4c81; color: #fff;
+      border-radius: 16px; font-size: 30px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px;
+    }
+    h1 { text-align: center; font-size: 22px; color: #0f4c81; margin-bottom: 4px; }
+    .brand { text-align: center; font-size: 13px; color: #6b7280; margin-bottom: 24px; }
+
+    .section-label {
+      font-size: 12px; font-weight: 700; color: #0f4c81; text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: 8px;
+    }
+    .info {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px;
+      padding: 12px 14px; font-size: 13px; color: #1e40af; line-height: 1.55;
+      margin-bottom: 20px;
+    }
+    .info strong { display: block; margin-bottom: 4px; font-size: 14px; }
+
+    input {
+      display: block; width: 100%; padding: 14px 16px;
+      border: 2px solid #e5e7eb; border-radius: 12px;
+      font-size: 18px; font-family: 'Courier New', monospace;
+      color: #111; background: #fafafa;
+      -webkit-appearance: none; outline: none;
+      margin-bottom: 12px; transition: border-color .15s;
+    }
+    input:focus { border-color: #0f4c81; background: #fff; }
+    input::placeholder { color: #9ca3af; font-size: 16px; }
+
+    button {
+      display: block; width: 100%; padding: 15px;
+      border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      transition: opacity .15s;
+    }
+    button:active { opacity: .8; }
+    button:disabled { opacity: .45; cursor: default; }
+    .btn-primary { background: #0f4c81; color: #fff; margin-bottom: 10px; }
+    .btn-secondary { background: #e0e7ff; color: #0f4c81; margin-bottom: 10px; }
+
+    .progress { display: none; margin: 16px 0 4px; }
+    .progress.visible { display: block; }
+    .progress-bar { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #0f4c81; width: 0%; transition: width .15s; }
+    .progress-txt { font-size: 12px; color: #6b7280; text-align: center; margin-top: 6px; }
+
+    .success { text-align: center; font-size: 14px; font-weight: 600; color: #16a34a; margin-top: 12px; }
+    .divider { border: none; border-top: 1px solid #f0f0f0; margin: 20px 0; }
+    .hint { font-size: 12px; color: #9ca3af; line-height: 1.65; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">R</div>
+  <h1>RestaurantOS</h1>
+  <p class="brand">Restoran Yönetim Sistemi</p>
+
+  <div class="info" id="info-box">
+    <strong>Nasıl bağlanılır?</strong>
+    Sunucu PC'de <b>Startup.bat</b> çalıştırın. Ekranda yazan
+    IP adresini (ör. <code>192.168.1.103</code>) aşağıya yazıp
+    <b>Bağlan</b>'a dokunun.
+  </div>
+
+  <div class="section-label">Sunucu IP Adresi</div>
+  <input
+    id="ip"
+    type="text"
+    inputmode="decimal"
+    placeholder="192.168.1.103"
+    autocapitalize="off"
+    autocorrect="off"
+    autocomplete="off"
+    spellcheck="false"
+  />
+
+  <button class="btn-primary" id="btn-go">Bağlan →</button>
+  <button class="btn-secondary" id="btn-scan">🔍 Ağda Otomatik Bul</button>
+
+  <div class="progress" id="prog">
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+    <div class="progress-txt" id="prog-txt">Aranıyor…</div>
+  </div>
+
+  <p class="success" id="success-msg"></p>
+
+  <hr class="divider" />
+  <p class="hint">
+    Telefon ve sunucu PC <strong>aynı WiFi</strong>'da olmalı.<br>
+    Bağlandıktan sonra tarayıcıdan <strong>Ana ekrana ekle</strong> yapın.
+  </p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORE_KEY = 'ros_server';
+
+  /* ---------- yardımcılar ---------- */
+  function $id(id) { return document.getElementById(id); }
+  function store(v) { try { localStorage.setItem(STORE_KEY, v); } catch (e) {} }
+  function recall() { try { return localStorage.getItem(STORE_KEY) || ''; } catch (e) { return ''; } }
+
+  function normalise(raw) {
+    raw = (raw || '').trim().replace(/^https?:\/\//i, '').split('/')[0];
+    if (!raw) return '';
+    if (raw.indexOf(':') === -1) raw += ':8080';
+    return 'http://' + raw;
+  }
+
+  function goLogin(url) {
+    url = url.replace(/\/$/, '');
+    store(url);
+    $id('success-msg').textContent = '✓ Bağlandı, yönlendiriliyor…';
+    window.location.href = url + '/login';
+  }
+
+  /* ---------- XHR probe (iOS + Android uyumlu) ---------- */
+  function probe(base, timeoutMs) {
+    return new Promise(function (resolve) {
+      var settled = false;
+      function finish(ok) { if (!settled) { settled = true; resolve(ok); } }
+
+      var xhr = new XMLHttpRequest();
+      xhr.timeout = timeoutMs || 1200;
+      try {
+        xhr.open('GET', base.replace(/\/$/, '') + '/api/health', true);
+        xhr.onload = function () {
+          try { finish(JSON.parse(xhr.responseText).status === 'ok'); }
+          catch (e) { finish(false); }
+        };
+        xhr.onerror = function () { finish(false); };
+        xhr.ontimeout = function () { finish(false); };
+        xhr.send();
+      } catch (e) { finish(false); }
+
+      /* kesin güvenlik: iki kat timeout */
+      setTimeout(function () { finish(false); }, (timeoutMs || 1200) + 200);
+    });
+  }
+
+  /* ---------- Bağlan butonu ---------- */
+  $id('btn-go').onclick = function () {
+    var url = normalise($id('ip').value);
+    if (!url) {
+      alert('IP adresi girin.\nÖrnek: 192.168.1.103');
+      $id('ip').focus();
+      return;
+    }
+    this.disabled = true;
+    this.textContent = 'Açılıyor…';
+    /* iOS'ta probe yapmadan direkt yönlendir — en güvenilir */
+    goLogin(url);
+  };
+
+  /* ---------- Otomatik tarama ---------- */
+  $id('btn-scan').onclick = function () {
+    var btn = this;
+    btn.disabled = true;
+    $id('btn-go').disabled = true;
+    $id('prog').classList.add('visible');
+
+    /* Sadece sık kullanılan host'ları tara (hız için) */
+    var subnets = ['192.168.1', '192.168.0', '192.168.43', '10.0.0'];
+    var commonHosts = [1,2,3,10,20,50,100,101,102,103,104,105,106,107,108,109,110,200,201,202];
+    var ports = [8080, 80];
+    var total = subnets.length * commonHosts.length;
+    var done = 0;
+    var stopped = false;
+
+    function setProgress(pct, txt) {
+      $id('prog-fill').style.width = pct + '%';
+      $id('prog-txt').textContent = txt;
+    }
+
+    /* Sıralı tarama — iOS'ta paralel istekler donuyor */
+    function scanNext(si, hi, pi) {
+      if (stopped) return;
+      if (si >= subnets.length) {
+        /* Bulunamadı */
+        btn.disabled = false;
+        $id('btn-go').disabled = false;
+        $id('prog').classList.remove('visible');
+        $id('info-box').style.display = '';
+        alert('Sunucu bulunamadı.\n\nYapılacaklar:\n• Sunucu PC\'de Startup.bat açık olmalı\n• Telefon ile sunucu aynı WiFi\'da olmalı\n• Aşağıya IP\'yi elle yazıp Bağlan\'a dokunun');
+        return;
+      }
+
+      var host = commonHosts[hi];
+      var url = 'http://' + subnets[si] + '.' + host + ':' + ports[pi];
+      done++;
+      setProgress(Math.round(done / total * 98), subnets[si] + '.' + host + ' deneniyor…');
+
+      probe(url, 700).then(function (ok) {
+        if (ok) {
+          stopped = true;
+          var cleanIp = subnets[si] + '.' + host;
+          $id('ip').value = cleanIp;
+          setProgress(100, 'Bulundu! ' + url);
+          setTimeout(function () { goLogin(url); }, 300);
+          return;
+        }
+        /* sonraki adrese geç */
+        var nPi = pi + 1;
+        var nHi = hi;
+        var nSi = si;
+        if (nPi >= ports.length) { nPi = 0; nHi = hi + 1; }
+        if (nHi >= commonHosts.length) { nHi = 0; nSi = si + 1; }
+        setTimeout(function () { scanNext(nSi, nHi, nPi); }, 10);
+      });
+    }
+
+    $id('info-box').style.display = 'none';
+    scanNext(0, 0, 0);
+  };
+
+  /* ---------- Başlangıç ---------- */
+  /* Sayfa zaten sunucudan açıldıysa (LAN IP) direkt git */
+  var h = location.hostname;
+  if (/^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(h)) {
+    goLogin(location.protocol + '//' + h + ':8080');
+    return;
+  }
+
+  /* Önceki kayıtlı IP'yi forma doldur */
+  var prev = recall();
+  if (prev) {
+    try {
+      var parsed = new URL(prev);
+      $id('ip').value = parsed.hostname;
+    } catch (e) {}
+  }
+})();
+</script>
+</body>
+</html>
