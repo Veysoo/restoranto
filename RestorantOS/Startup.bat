@@ -1,13 +1,12 @@
 @echo off
 setlocal EnableDelayedExpansion
-chcp 65001 >nul 2>&1
 title RestaurantOS - Kurulum ve Baslatma
 
 echo.
-echo  ╔══════════════════════════════════════════════════╗
-echo  ║        RestaurantOS  -  Tam Kurulum              ║
-echo  ║   Docker + Veritabani + Uygulama + Ag Erisimi   ║
-echo  ╚══════════════════════════════════════════════════╝
+echo  ==================================================
+echo    RestaurantOS  -  Tam Kurulum
+echo    Docker + Veritabani + Uygulama + Ag Erisimi
+echo  ==================================================
 echo.
 
 :: Uygulama klasoru (bu .bat neredeyse orasi)
@@ -33,36 +32,36 @@ if %errorlevel% neq 0 (
 echo  [0/7] Yonetici yetkisi mevcut.  OK
 
 :: ============================================
-:: ADIM 1: Sanallaştirma kontrol
+:: ADIM 1: Sanallastirma kontrol
 :: ============================================
-echo  [1/7] Sanallaştirma kontrol ediliyor...
+echo  [1/7] Sanallastirma kontrol ediliyor...
 
 :: Docker PATH'e ekle
 set "PATH=%ProgramFiles%\Docker\Docker\resources\bin;%LocalAppData%\Programs\Docker\Docker\resources\bin;%PATH%"
 
-:: Docker zaten kuruluysa WSL kontrolunu atla (Docker kendi halleder)
+:: Docker zaten kuruluysa WSL kontrolunu atla
 where docker >nul 2>&1 && goto :wsl_done
 if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe" goto :wsl_done
 if exist "%LocalAppData%\Programs\Docker\Docker\Docker Desktop.exe" goto :wsl_done
 
-:: Docker yok, WSL2/Sanallaştirma gerekli
-echo         Docker kurulmamis, sanallaştirma kontrol ediliyor...
+:: Docker yok, sanallastirma gerekli
+echo         Docker kurulmamis, sanallastirma kontrol ediliyor...
 dism /online /get-featureinfo /featurename:VirtualMachinePlatform 2>nul | findstr /c:"State : Enabled" >nul 2>&1
 if not errorlevel 1 goto :wsl_done
 
-echo         Sanallaştirma etkinlestiriliyor...
+echo         Sanallastirma etkinlestiriliyor...
 dism /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart >nul 2>&1
 dism /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart >nul 2>&1
-echo [%date% %time%] Sanallaştirma etkinlestirildi >> "%LOG%"
+echo [%date% %time%] Sanallastirma etkinlestirildi >> "%LOG%"
 
 dism /online /get-featureinfo /featurename:VirtualMachinePlatform 2>nul | findstr /c:"State : Enabled" >nul 2>&1
 if errorlevel 1 (
     echo.
-    echo  ╔══════════════════════════════════════════════════╗
-    echo  ║  Sanallaştirma etkinlestirildi. BILGISAYAR        ║
-    echo  ║  YENIDEN BASLATILMALI. Restart sonrasi bu .bat    ║
-    echo  ║  dosyasini tekrar calistirin.                     ║
-    echo  ╚══════════════════════════════════════════════════╝
+    echo  ==================================================
+    echo    Sanallastirma etkinlestirildi.
+    echo    BILGISAYAR YENIDEN BASLATILMALI.
+    echo    Restart sonrasi bu .bat dosyasini tekrar calistirin.
+    echo  ==================================================
     echo.
     set /p RESTART="  Simdi yeniden baslatilsin mi? (E/H): "
     if /i "!RESTART!"=="E" shutdown /r /t 10 /c "RestaurantOS icin yeniden baslatiliyor"
@@ -71,7 +70,7 @@ if errorlevel 1 (
 )
 
 :wsl_done
-echo         Sanallaştirma hazir.  OK
+echo         Sanallastirma hazir.  OK
 
 :: ============================================
 :: ADIM 2: Docker kurulu mu kontrol et
@@ -108,7 +107,7 @@ echo  [3/7] Docker servisi kontrol ediliyor...
 docker info >nul 2>&1
 if not errorlevel 1 goto :docker_running
 
-echo         Docker calısmiyor. Baslatiliyor...
+echo         Docker calismiyor. Baslatiliyor...
 
 set "DEXE="
 if exist "%ProgramFiles%\Docker\Docker\Docker Desktop.exe"              set "DEXE=%ProgramFiles%\Docker\Docker\Docker Desktop.exe"
@@ -259,11 +258,8 @@ set /a tries=0
 set /a tries+=1
 if !tries! gtr 90 goto :timeout
 
-:: Health check - curl veya powershell ile
+:: Health check
 curl.exe -s -o nul -w "%%{http_code}" http://localhost:8080/api/health 2>nul | findstr /b "200" >nul 2>&1
-if not errorlevel 1 goto :app_ready
-
-powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:8080/api/health' -UseBasicParsing -TimeoutSec 3; if($r.StatusCode -eq 200){'OK'} } catch {}" 2>nul | findstr "OK" >nul 2>&1
 if not errorlevel 1 goto :app_ready
 
 set /a remaining=90-!tries!
@@ -279,26 +275,26 @@ goto :waitloop
 
 :app_ready
 echo.
-echo  ╔══════════════════════════════════════════════════╗
-echo  ║          RestaurantOS KURULUM TAMAMLANDI!        ║
-echo  ╠══════════════════════════════════════════════════╣
-echo  ║                                                  ║
-echo  ║  Bu PC'den erisim:                               ║
-echo  ║    http://localhost:8080                          ║
-echo  ║                                                  ║
-echo  ║  Agdaki diger cihazlardan erisim:                ║
-echo  ║    http://%HOST_LAN_IP%:8080                     ║
-echo  ║                                                  ║
-echo  ║  Tablet/Telefon:                                 ║
-echo  ║    Ayni WiFi'ye baglanin ve yukaridaki adresi    ║
-echo  ║    tarayiciya yazin.                             ║
-echo  ║                                                  ║
-echo  ╠══════════════════════════════════════════════════╣
-echo  ║  Kullanici: admin                                ║
-echo  ║  Sifre    : Resto@Admin2024!                     ║
-echo  ╠══════════════════════════════════════════════════╣
-echo  ║  PC yeniden baslatildiginda OTOMATIK ACILIR!     ║
-echo  ╚══════════════════════════════════════════════════╝
+echo  ==================================================
+echo    RestaurantOS KURULUM TAMAMLANDI!
+echo  ==================================================
+echo.
+echo    Bu PC'den erisim:
+echo      http://localhost:8080
+echo.
+echo    Agdaki diger cihazlardan erisim:
+echo      http://%HOST_LAN_IP%:8080
+echo.
+echo    Tablet/Telefon:
+echo      Ayni WiFi'ye baglanin ve yukaridaki adresi
+echo      tarayiciya yazin.
+echo.
+echo  --------------------------------------------------
+echo    Kullanici: admin
+echo    Sifre    : Resto@Admin2024!
+echo  --------------------------------------------------
+echo    PC yeniden baslatildiginda OTOMATIK ACILIR!
+echo  ==================================================
 echo.
 
 echo [%date% %time%] BASARILI - http://%HOST_LAN_IP%:8080 >> "%LOG%"
@@ -309,18 +305,19 @@ goto :EOF
 
 :timeout
 echo.
-echo  ╔══════════════════════════════════════════════════╗
-echo  ║  [UYARI] Uygulama henuz hazir olmadi.            ║
-echo  ╠══════════════════════════════════════════════════╣
-echo  ║  Veritabani ilk kez olusturuluyorsa biraz daha   ║
-echo  ║  bekleyin. Genellikle 1-2 dakika yeterlidir.     ║
-echo  ║                                                  ║
-echo  ║  Kontrol icin:                                   ║
-echo  ║    docker logs restaurantos-app --tail 30         ║
-echo  ║    docker logs restaurantos-sqlserver --tail 15   ║
-echo  ║                                                  ║
-echo  ║  Tekrar denemek icin bu .bat'i calistirin.       ║
-echo  ╚══════════════════════════════════════════════════╝
+echo  ==================================================
+echo    [UYARI] Uygulama henuz hazir olmadi.
+echo  ==================================================
+echo.
+echo    Veritabani ilk kez olusturuluyorsa biraz daha
+echo    bekleyin. Genellikle 1-2 dakika yeterlidir.
+echo.
+echo    Kontrol icin:
+echo      docker logs restaurantos-app --tail 30
+echo      docker logs restaurantos-sqlserver --tail 15
+echo.
+echo    Tekrar denemek icin bu .bat'i calistirin.
+echo  ==================================================
 echo.
 echo [%date% %time%] TIMEOUT - uygulama hazir olmadi >> "%LOG%"
 
@@ -363,25 +360,19 @@ if not errorlevel 1 (
 
 :: --- Yontem 2: curl.exe ile indir ---
 set "INST=%TEMP%\DockerSetup.exe"
-set "DURL=https://desktop.docker.com/win/main/amd64/DockerSetupInstaller.exe"
+set "DURL=https://desktop.docker.com/win/main/amd64/DockerDesktopInstaller.exe"
 
 echo         Docker Desktop indiriliyor (~600 MB)...
 echo         Lutfen bekleyin, bu biraz zaman alabilir...
 
 curl.exe -L --progress-bar --retry 3 --retry-delay 5 -o "%INST%" "%DURL%"
 
-:: curl basarisizsa PowerShell dene
-if not exist "%INST%" (
-    set "DURL=https://desktop.docker.com/win/main/amd64/DockerDesktopInstaller.exe"
-    curl.exe -L --progress-bar --retry 3 --retry-delay 5 -o "%INST%" "!DURL!"
-)
-
 if not exist "%INST%" (
     echo         curl basarisiz, PowerShell ile deneniyor...
     powershell -NoProfile -Command ^
         "[Net.ServicePointManager]::SecurityProtocol='Tls12,Tls13';" ^
         "$ProgressPreference='SilentlyContinue';" ^
-        "Invoke-WebRequest -Uri 'https://desktop.docker.com/win/main/amd64/DockerDesktopInstaller.exe' -OutFile '%INST%' -UseBasicParsing"
+        "Invoke-WebRequest -Uri '%DURL%' -OutFile '%INST%' -UseBasicParsing"
 )
 
 if not exist "%INST%" (
